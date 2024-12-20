@@ -1,0 +1,26 @@
+'''
+Определить значение и номер первого отрицательного элемента заданного столбца матрицы А размером 5 х 4.
+'''
+import sys
+import numpy as np
+A = np.random.randint(0, 10, size=(5, 4))
+print(A)
+print()
+stolbes= int (input ('Введите номер столбца, который нужно проверить '))
+if stolbes > 4 or stolbes < -4:
+    print ('ТАКОГО СТОЛБЦА НЕ СУЩЕСТВУЕТ!!!')
+    sys.exit()
+znach = None
+index = -10
+
+for i in range(5):
+    if A[i][stolbes] < 0:
+        znach = A[i][stolbes]
+        index = i
+        break
+print()
+if index != -10:
+    print("Первый отрицательный элемент:", znach)
+    print("Номер строки элемента: ", index)
+else:
+    print("Отрицательные элементы не найдены")
