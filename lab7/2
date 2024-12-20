@@ -1,0 +1,39 @@
+'''
+Для формирования сборной по хоккею предварительно отобрано 30 игроков.
+На основании протоколов игр составлена таблица, в которой содержится штрафное время каждого игрока
+по каждой игре (2, 5 или 10 мин). Написать программу, которая составляет список кандидатов в сборную в порядке
+возрастания суммарного штрафного времени. Игрок, оштрафованный на 10 мин, из списка кандидатов исключается.
+'''
+class member:
+    def __init__ (self, name, penalty):
+        self.name = name
+        self.penalty = penalty
+
+pasha=member ('Маша', 2)
+sasha=member ('Саша', 10)
+igor=member ('Игорь', 5)
+vanya=member('Ваня', 5)
+sergei=member ('Сергей', 2)
+a=[]
+a.append(pasha)
+a.append(sasha)
+a.append(igor)
+a.append(vanya)
+a.append(sergei)
+b=[]
+for i in range (len(a)):
+    if a[i].penalty < 10:
+        b.append(a[i])
+c=[]
+while len (b)!=0:
+    min_penalty=2
+    max_index=0
+    for i in range (len(b)):
+        if b[i].penalty<=min_penalty:
+            min_penalty=b[i].penalty
+            max_index=i
+    c.append(b[max_index])
+    b.pop(max_index)
+for i in range (len(c)):
+    result='Имя ', c[i].name, 'Штрафные баллы' , str(c[i].penalty)
+    print (result)
