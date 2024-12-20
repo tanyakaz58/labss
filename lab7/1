@@ -1,0 +1,38 @@
+'''
+Группе студентов в результате полусеместровой аттестации были выставлены оценки по информатике,
+а также определено количество пропущенных занятий. Успеваемость каждого студента оценивается
+следующими баллами: «0» (неаттестован), «2», «3», «4» или «5». Вывести список неуспевающих (оценка «2») студентов
+в порядке убывания количества пропущенных ими занятий.
+'''
+
+class student:
+    def __init__ (self, name, marks, loose):
+        self.name = name
+        self.marks = marks
+        self.loose = loose
+masha=student ('Маша', 5,2)
+sasha=student ('Саша', 2,10)
+igor=student ('Игорь', 2,1)
+tanya=student ('Таня', 2,9)
+a=[]
+a.append(masha)
+a.append(sasha)
+a.append(igor)
+a.append(tanya)
+b=[]
+for i in range (len(a)):
+    if a[i].marks==2:
+        b.append(a[i])
+c=[]
+while len (b)!=0:
+    max_loose=0
+    max_index=0
+    for i in range (len(b)):
+        if b[i].loose>max_loose:
+            max_loose=b[i].loose
+            max_index=i
+    c.append(b[max_index])
+    b.pop(max_index)
+for i in range (len(c)):
+    result='Имя ', c[i].name, 'Оценка' , str(c[i].marks), 'Пропуски ', str(c[i].loose)
+    print (result)
