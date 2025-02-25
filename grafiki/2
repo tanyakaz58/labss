@@ -1,0 +1,11 @@
+import matplotlib.pyplot as plt
+with open('Данные.txt', 'r') as file:
+    lines = file.readlines()
+    x = list(map(float, lines[0].strip().split()))
+    y = list(map(float, lines[1].strip().split()))
+plt.plot(x, y)
+plt.title("График данных из файла")
+plt.xlabel("Ось X")
+plt.ylabel("Ось Y")
+plt.grid()
+plt.show()
