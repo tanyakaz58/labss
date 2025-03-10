@@ -1,0 +1,82 @@
+import random
+import heapq
+import numpy as np
+import matplotlib.pyplot as plt
+
+p = 0.8
+xMin1, xMax1 = 0, 50
+yMin1, yMax1 = 0, 50
+xMin2, xMax2 = 25, 75
+yMin2, yMax2 = 25, 75
+k = 3
+classesCount = 2
+pointsCount1 = 50
+pointsCount2 = 50
+
+x = []
+y = []
+for _ in range(pointsCount1):
+    x.append([random.uniform(xMin1, xMax1), random.uniform(yMin1, yMax1)])
+    y.append(1)
+for _ in range(pointsCount2):
+    x.append([random.uniform(xMin2, xMax2), random.uniform(yMin2, yMax2)])
+    y.append(2)
+
+def train_test_split(x, y, p):
+    indices = list(range(len(x)))
+    random.shuffle(indices)
+    split_idx = int(len(x) * p)
+    x_train = [x[i] for i in indices[:split_idx]]
+    y_train = [y[i] for i in indices[:split_idx]]
+    x_test = [x[i] for i in indices[split_idx:]]
+    y_test = [y[i] for i in indices[split_idx:]]
+    return x_train, x_test, y_train, y_test
+
+def Pred(x_train, y_train, x_test, k=3):
+    y_predict = []
+    for test_point in x_test:
+        distances = []
+        for j, train_point in enumerate(x_train):
+            dist = np.sqrt((train_point[0]-test_point[0])**2 + (train_point[1]-test_point[1])**2)
+            distances.append((dist, y_train[j]))
+        k_nearest = heapq.nsmallest(k, distances, key=lambda x: x[0])
+        counts = {1:0, 2:0}
+        for _, label in k_nearest:
+            counts[label] += 1
+        y_predict.append(1 if counts[1] > counts[2] else 2)
+    return y_predict
+
+x_train, x_test, y_train, y_test = train_test_split(x, y, p)
+
+y_pred = Pred(x_train, y_train, x_test, k)
+
+plt.figure(figsize=(10, 8))
+
+h = 1
+xx, yy = np.meshgrid(np.arange(0, 75, h), np.arange(0, 75, h))
+grid_points = np.c_[xx.ravel(), yy.ravel()]
+
+Z = Pred(x_train, y_train, grid_points, k)
+Z = np.array(Z).reshape(xx.shape)
+
+plt.contourf(xx, yy, Z, alpha=0.3, cmap='coolwarm')
+
+x_train_np = np.array(x_train)
+plt.scatter(x_train_np[y_train == 1, 0], x_train_np[y_train == 1, 1],
+            c='blue', label='Class 1 Train', edgecolor='k')
+plt.scatter(x_train_np[y_train == 2, 0], x_train_np[y_train == 2, 1],
+            c='red', label='Class 2 Train', edgecolor='k')
+
+x_test_np = np.array(x_test)
+correct = np.array(y_pred) == np.array(y_test)
+plt.scatter(x_test_np[correct, 0], x_test_np[correct, 1],
+            c='green', marker='s', s=50, label='Correct Test', edgecolor='k')
+plt.scatter(x_test_np[~correct, 0], x_test_np[~correct, 1],
+            c='black', marker='x', s=100, label='Incorrect Test')
+
+plt.xlim(0, 75)
+plt.ylim(0, 75)
+plt.xlabel('X')
+plt.ylabel('Y')
+plt.legend()
+plt.show()
