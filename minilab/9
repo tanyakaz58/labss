@@ -9,15 +9,26 @@ x1=random.randint (1,20)
 print (x1, '- номер для 9 лабораторной работы')
 print ()
 
-k = int(input('Введите индекс элемента, после которого хотите вставить массив '))
-#Размерность массива А = 6
-#Размерность массива B = 6
-with open("Массив.txt") as f:
-    a = list(map(int, f.readline().split()))
-    b = list(map(int, f.readline().split()))
+m = int(input("Введите размер первого массива (m): "))
+n = int(input("Введите размер второго массива (n): "))
 
-result = a[:k+1] + b + a[k+1:]
+arr1 = list(range(1, m + 1))
+arr2 = list(range(1, n + 1))
 
-print("Результат:", *result)
-with open("output.txt", "w") as f:
-    f.write(" ".join(map(str, result)))
+print (arr1)
+print (arr2)
+
+with open('arrays.txt', 'w') as f:
+    f.write(' '.join(map(str, arr1)) + '\n')
+    f.write(' '.join(map(str, arr2)) + '\n')
+
+with open('arrays.txt', 'r') as f:
+    lines = f.readlines()
+    arr1 = list(map(int, lines[0].strip().split()))
+    arr2 = list(map(int, lines[1].strip().split()))
+
+k = int(input(f"Введите k (от 0 до {len(arr1)}): "))
+
+new_array = arr1[:k] + arr2 + arr1[k:]
+
+print("Результат объединения:", new_array)
