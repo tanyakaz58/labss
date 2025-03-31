@@ -4,6 +4,8 @@
 '''
 
 import random
+from array import array
+
 random.seed (911)
 x1=random.randint (1,20)
 print (x1, '- номер для 9 лабораторной работы')
@@ -30,5 +32,8 @@ with open('arrays.txt', 'r') as f:
 k = int(input(f"Введите k (от 0 до {len(arr1)}): "))
 
 new_array = arr1[:k] + arr2 + arr1[k:]
+
+with open("arrays.txt", 'a') as f:
+    f.write(' '.join(map(str, new_array)) + '\n')
 
 print("Результат объединения:", new_array)
