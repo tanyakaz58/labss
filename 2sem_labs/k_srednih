@@ -1,0 +1,91 @@
+import numpy as np
+import matplotlib.pyplot as plt
+from matplotlib.widgets import Slider
+from sklearn.metrics import pairwise_distances
+
+
+def generate_ring_points(center, radius, n_points):
+    angles = np.random.uniform(0, 2 * np.pi, n_points)
+    distances = np.random.uniform(0.7 * radius, 1.3 * radius, n_points)
+    x = center[0] + distances * np.cos(angles)
+    y = center[1] + distances * np.sin(angles)
+    return np.column_stack((x, y))
+
+
+def k_means(x, y, k=3, max_iter=100):
+    data = np.column_stack((x, y))
+    centroids = data[np.random.choice(data.shape[0], k, replace=False)]
+    history = []
+
+    for _ in range(max_iter):
+        distances = pairwise_distances(data, centroids)
+        labels = np.argmin(distances, axis=1) + 1
+
+        history.append({
+            'centroids': centroids.copy(),
+            'labels': labels.copy()
+        })
+
+        if len(history) > 1 and np.all(history[-1]['labels'] == history[-2]['labels']):
+            break
+
+        for i in range(k):
+            cluster_points = data[labels == i + 1]
+            if len(cluster_points) > 0:
+                centroids[i] = np.mean(cluster_points, axis=0)
+
+    return history
+
+np.random.seed(52)
+clusters = [
+    {"center": (3, 5), "radius": 1.5, "n_points": 20},
+    {"center": (7, 5), "radius": 2.0, "n_points": 20},
+    {"center": (1, 8), "radius": 1.0, "n_points": 20}
+]
+
+for i in range(len(clusters)):
+    for j in range(i + 1, len(clusters)):
+        dist = np.linalg.norm(np.array(clusters[i]["center"]) - np.array(clusters[j]["center"]))
+        if dist < (clusters[i]["radius"] + clusters[j]["radius"]):
+            raise ValueError("Окружности пересекаются! Задайте другие харатеристики окружностям")
+
+data = np.vstack([generate_ring_points(c["center"], c["radius"], c["n_points"]) for c in clusters])
+x, y = data[:, 0], data[:, 1]
+
+history = k_means(x, y, k=3)
+print(f"Алгоритм сошелся за {len(history)} итераций")
+
+fig, ax = plt.subplots(figsize=(10, 8))
+plt.subplots_adjust(bottom=0.25)
+
+def update(val):
+    epoch = int(slider.val)
+    if epoch >= len(history):
+        epoch = len(history) - 1
+
+    ax.clear()
+    state = history[epoch]
+
+    colors = ['blue', 'grey', 'red']
+    for i in range(3):
+        mask = state['labels'] == i + 1
+        ax.scatter(x[mask], y[mask], c=colors[i], s=50, alpha=0.6, label=f'Кластер {i + 1}')
+
+    ax.scatter(state['centroids'][:, 0], state['centroids'][:, 1],
+               c='black', marker='X', s=200, label='Центры')
+
+    ax.set_title(f'K-means Clustering (Epoch: {epoch + 1})')
+    ax.set_xlabel('X')
+    ax.set_ylabel('Y')
+    ax.legend()
+    ax.grid(True)
+    ax.axis('equal')
+    fig.canvas.draw_idle()
+
+ax_slider = plt.axes([0.2, 0.1, 0.6, 0.03])
+slider = Slider(ax_slider, 'Epoch', 1, len(history), valinit=1, valstep=1)
+slider.on_changed(update)
+
+update(1)
+
+plt.show()
