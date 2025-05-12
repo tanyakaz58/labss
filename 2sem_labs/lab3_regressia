@@ -1,0 +1,84 @@
+import numpy as np
+import matplotlib.pyplot as plt
+from matplotlib.widgets import Slider
+from typing import List
+
+def generate_data(x_min=-10, x_max=10, points=50):
+    x = np.linspace(x_min, x_max, points)
+    y = x ** 2 + x + 1 + np.random.uniform(-3, 3, size=points)
+    return x, y
+
+x, y = generate_data()
+
+def mse(y_pred: np.ndarray, y_true: np.ndarray) -> float:
+    return np.mean((y_pred - y_true) ** 2)
+
+def get_da(x: np.ndarray, y: np.ndarray, a: float, b: float, c: float) -> float:
+    return 2 * np.mean((a * x ** 2 + b * x + c - y) * x ** 2)
+
+def get_db(x: np.ndarray, y: np.ndarray, a: float, b: float, c: float) -> float:
+    return 2 * np.mean((a * x ** 2 + b * x + c - y) * x)
+
+def get_dc(x: np.ndarray, y: np.ndarray, a: float, b: float, c: float) -> float:
+    return 2 * np.mean(a * x ** 2 + b * x + c - y)
+
+def fit(x: np.ndarray, y: np.ndarray,
+        speed=0.0001, epochs=1000,
+        a0=0.0, b0=0.0, c0=0.0):
+    a, b, c = a0, b0, c0
+    history = []
+
+    for epoch in range(epochs):
+        a_new = a - speed * get_da(x, y, a, b, c)
+        b_new = b - speed * get_db(x, y, a, b, c)
+        c_new = c - speed * get_dc(x, y, a, b, c)
+
+        history.append({
+            'a': a,
+            'b': b,
+            'c': c,
+            'mse': mse(a * x ** 2 + b * x + c, y)
+        })
+
+        a, b, c = a_new, b_new, c_new
+
+    return history
+
+history = fit(x, y, speed=0.0001, epochs=1000)
+
+fig, ax = plt.subplots(figsize=(10, 6))
+plt.subplots_adjust(bottom=0.25)
+
+def update(epoch):
+    ax.clear()
+
+    ax.scatter(x, y, color='blue', label='Исходные данные')
+
+    params = history[epoch]
+    a, b, c = params['a'], params['b'], params['c']
+
+    x_vals = np.linspace(min(x), max(x), 100)
+    y_vals = a * x_vals ** 2 + b * x_vals + c
+    ax.plot(x_vals, y_vals, 'r-',
+            label=f'Регрессия: {a:.2f}x² + {b:.2f}x + {c:.2f}\nMSE: {params["mse"]:.2f}')
+
+    ax.set_title(f'Квадратичная регрессия (Эпоха: {epoch + 1}/{len(history)})')
+    ax.set_xlabel('x')
+    ax.set_ylabel('y')
+    ax.legend()
+    ax.grid(True)
+
+ax_slider = plt.axes([0.2, 0.1, 0.6, 0.03])
+slider = Slider(ax_slider, 'Эпоха', 0, len(history) - 1, valinit=0, valstep=1)
+slider.on_changed(update)
+
+update(0)
+
+plt.show()
+
+final_params = history[-1]
+print("\nФинальные параметры модели:")
+print(f"a = {final_params['a']:.4f}")
+print(f"b = {final_params['b']:.4f}")
+print(f"c = {final_params['c']:.4f}")
+print(f"Финальная MSE: {final_params['mse']:.4f}")
