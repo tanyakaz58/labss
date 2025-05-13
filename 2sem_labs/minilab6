@@ -1,0 +1,101 @@
+import numpy as np
+import matplotlib.pyplot as plt
+from matplotlib.widgets import Slider
+
+def f(x):
+    """Функция: x*sin(x) + x^2/10"""
+    return x * np.sin(x) + x ** 2 / 10
+
+def df(x):
+    """Производная: sin(x) + x*cos(x) + x/5"""
+    return np.sin(x) + x * np.cos(x) + x / 5
+
+KNOWN_MIN = -1.195
+
+def gradientDescend(func=f, diffFunc=df, x0=3.0, speed=0.01, epochs=100):
+    xList, yList = [], []
+    x = x0
+
+    for _ in range(epochs):
+        xList.append(x)
+        yList.append(func(x))
+        x = x - speed * diffFunc(x)
+
+        x = np.clip(x, -5, 5)
+
+    return xList, yList
+
+def plot_results(xList, yList):
+    fig, ax = plt.subplots(figsize=(12, 6))
+    plt.subplots_adjust(bottom=0.25)
+
+    x_vals = np.linspace(-5, 5, 400)
+    ax.plot(x_vals, f(x_vals), 'b-', label='f(x) = x·sin(x) + x²/10')
+    ax.axvline(KNOWN_MIN, color='green', linestyle=':', label=f'Известный минимум: x={KNOWN_MIN:.3f}')
+
+    line, = ax.plot(xList, yList, 'r--', alpha=0.3)
+    scat = ax.scatter(xList, yList, c='red', s=40)
+
+    ax.set_title('Градиентный спуск')
+    ax.set_xlabel('x')
+    ax.set_ylabel('f(x)')
+    ax.legend()
+    ax.grid(True)
+    ax.set_xlim(-5, 5)
+
+    ax_slider = plt.axes([0.2, 0.1, 0.6, 0.03])
+    slider = Slider(ax_slider, 'Эпохи', 0, len(xList) - 1, valinit=len(xList) - 1, valstep=1)
+
+    def update(val):
+        epoch = int(slider.val)
+        scat.set_offsets(np.c_[xList[:epoch + 1], yList[:epoch + 1]])
+        line.set_data(xList[:epoch + 1], yList[:epoch + 1])
+        fig.canvas.draw_idle()
+
+    slider.on_changed(update)
+    plt.show()
+
+def analyze_speed_convergence():
+    speeds = np.linspace(0.001, 0.1, 50)
+    results = []
+
+    for speed in speeds:
+        xList, _ = gradientDescend(speed=speed, epochs=100)
+        final_x = xList[-1]
+        converged = abs(final_x - KNOWN_MIN) < 0.1
+        results.append((speed, final_x, converged))
+
+    critical_speed = None
+    for i in range(1, len(results)):
+        if not results[i][2] and results[i - 1][2]:
+            critical_speed = (results[i][0] + results[i - 1][0]) / 2
+            break
+
+    return critical_speed, results
+
+if __name__ == "__main__":
+    x0 = 3.0
+    speed = 0.03
+    epochs = 100
+
+    xList, yList = gradientDescend(x0=x0, speed=speed, epochs=epochs)
+
+    plot_results(xList, yList)
+
+    final_x = xList[-1]
+    if abs(final_x - KNOWN_MIN) < 0.1:
+        print(f"Сходится к минимуму: x = {final_x:.4f} (ошибка: {abs(final_x - KNOWN_MIN):.4f})")
+    else:
+        print(f"Не сошлось. Финальное x = {final_x:.4f} (ошибка: {abs(final_x - KNOWN_MIN):.4f})")
+
+    critical_speed, speed_results = analyze_speed_convergence()
+
+    if critical_speed:
+        print(f"\nГраничное значение speed: ~{critical_speed:.4f}")
+        print("Результаты анализа:")
+        print("Speed\t| Final x\t| Сходимость")
+        print("-" * 35)
+        for res in speed_results[::5]:  # Выводим каждую 5-ю скорость
+            print(f"{res[0]:.4f}\t| {res[1]:.4f}\t| {"+ "if res[2] else "-"}")
+    else:
+        print("Не удалось точно определить критическую скорость в диапазоне 0.001-0.1")
