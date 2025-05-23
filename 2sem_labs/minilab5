@@ -46,17 +46,15 @@ def kmeans_cluster(X, n_clusters=3):
     return kmeans.fit_predict(X)
 
 def meanshift_cluster(X):
-    # Уменьшаем bandwidth для игнорирования шума
     bandwidth = estimate_bandwidth(X, quantile=0.1)
     ms = MeanShift(
         bandwidth=bandwidth,
         bin_seeding=True,
-        min_bin_freq=5  # Игнорируем маленькие группы
+        min_bin_freq=5 
     )
     return ms.fit_predict(X)
 
 def hdbscan_cluster(X):
-    # Параметры для чувствительности к шуму
     clusterer = hdbscan.HDBSCAN(
         min_cluster_size=5,
         cluster_selection_epsilon=0.1,
@@ -96,15 +94,12 @@ fig, axes = plt.subplots(
 )
 plt.subplots_adjust(hspace=0.3, wspace=0.3)
 
-# Добавляем общие заголовки для столбцов
 for ax, method in zip(axes[0], methods.keys()):
     ax.set_title(method, fontsize=12, pad=20)
 
-# Заполняем таблицу
 for (dataset_name, (X, y_true)), row_axes in zip(datasets.items(), axes):
     X_scaled = StandardScaler().fit_transform(X)
 
-    # Добавляем названия строк слева
     row_axes[0].set_ylabel(dataset_name, fontsize=12, rotation=0, ha='right', va='center')
 
     for (method_name, cluster_func), ax in zip(methods.items(), row_axes):
