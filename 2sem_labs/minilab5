@@ -1,0 +1,117 @@
+"""
+Питон выдал 3 числа: 1,8,3. Использовала код ниже. Значит реальзуем методы
+K - Means, Mean - shift, HDBSCAN
+
+import random
+numbers = random.sample(range(1, 12), 3)
+print(numbers)
+"""
+
+import numpy as np
+import matplotlib.pyplot as plt
+from sklearn.cluster import KMeans, MeanShift, estimate_bandwidth
+from sklearn.datasets import make_blobs, make_moons, make_circles, make_s_curve
+import hdbscan
+from sklearn.preprocessing import StandardScaler
+import pandas as pd
+
+def generate_blobs(n_samples=300, random_state=42):
+    return make_blobs(n_samples=n_samples, centers=3, random_state=random_state)
+
+def generate_moons(n_samples=300, noise=0.05, random_state=42):
+    return make_moons(n_samples=n_samples, noise=noise, random_state=random_state)
+
+def generate_circles(n_samples=300, noise=0.05, factor=0.5, random_state=42):
+    return make_circles(n_samples=n_samples, noise=noise, factor=factor, random_state=random_state)
+
+def generate_anisotropic(n_samples=300, random_state=42):
+    X, y = make_blobs(n_samples=n_samples, centers=3, random_state=random_state)
+    transformation = [[0.6, -0.6], [-0.4, 0.8]]
+    X = np.dot(X, transformation)
+    return X, y
+
+def generate_varied(n_samples=300, random_state=42):
+    X, y = make_blobs(n_samples=n_samples, centers=3, cluster_std=[1.0, 2.5, 0.5], random_state=random_state)
+    return X, y
+
+def generate_noise(n_samples=300, noise=0.15, random_state=42):
+    X, y = make_blobs(n_samples=n_samples, centers=3, random_state=random_state)
+    X = np.concatenate([X, np.random.uniform(low=-10, high=10, size=(50, 2))])
+    y = np.concatenate([y, np.full(50, -1)])  # Метка -1 для шума
+    return X, y
+
+
+def kmeans_cluster(X, n_clusters=3):
+    kmeans = KMeans(n_clusters=n_clusters, random_state=42)
+    return kmeans.fit_predict(X)
+
+def meanshift_cluster(X):
+    # Уменьшаем bandwidth для игнорирования шума
+    bandwidth = estimate_bandwidth(X, quantile=0.1)
+    ms = MeanShift(
+        bandwidth=bandwidth,
+        bin_seeding=True,
+        min_bin_freq=5  # Игнорируем маленькие группы
+    )
+    return ms.fit_predict(X)
+
+def hdbscan_cluster(X):
+    # Параметры для чувствительности к шуму
+    clusterer = hdbscan.HDBSCAN(
+        min_cluster_size=5,
+        cluster_selection_epsilon=0.1,
+        min_samples=3
+    )
+    return clusterer.fit_predict(X)
+
+def plot_clusters(X, y_pred, title):
+    plt.scatter(X[:, 0], X[:, 1], c=y_pred, cmap='viridis', s=10)
+    plt.title(title)
+    plt.axis('equal')
+    plt.show()
+
+
+datasets = {
+    "Blobs": generate_blobs(),
+    "Moons": generate_moons(),
+    "Circles": generate_circles(),
+    "Anisotropic": generate_anisotropic(),
+    "Varied Density": generate_varied(),
+    "Noisy Data": generate_noise()
+}
+
+results = []
+
+methods = {
+    "K-Means": kmeans_cluster,
+    "Mean-Shift": meanshift_cluster,
+    "HDBSCAN": hdbscan_cluster
+}
+
+# Создаем фигуру с явной сеткой
+fig, axes = plt.subplots(
+    nrows=len(datasets),
+    ncols=len(methods),
+    figsize=(18, 25)
+)
+plt.subplots_adjust(hspace=0.3, wspace=0.3)
+
+# Добавляем общие заголовки для столбцов
+for ax, method in zip(axes[0], methods.keys()):
+    ax.set_title(method, fontsize=12, pad=20)
+
+# Заполняем таблицу
+for (dataset_name, (X, y_true)), row_axes in zip(datasets.items(), axes):
+    X_scaled = StandardScaler().fit_transform(X)
+
+    # Добавляем названия строк слева
+    row_axes[0].set_ylabel(dataset_name, fontsize=12, rotation=0, ha='right', va='center')
+
+    for (method_name, cluster_func), ax in zip(methods.items(), row_axes):
+        y_pred = cluster_func(X_scaled)
+        ax.scatter(X_scaled[:, 0], X_scaled[:, 1], c=y_pred, cmap='viridis', s=10)
+        ax.set_xticks([])
+        ax.set_yticks([])
+        ax.axis('equal')
+
+plt.show()
