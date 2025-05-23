@@ -1,0 +1,112 @@
+import numpy as np
+import matplotlib.pyplot as plt
+from sklearn import datasets
+from sklearn.model_selection import train_test_split
+from sklearn.neighbors import KNeighborsClassifier
+from sklearn.svm import SVC
+from keras.models import Sequential
+from keras.layers import Dense
+from keras.optimizers import Adam
+
+def generate_datasets():
+    seed = 30
+    n_samples = 500
+
+    noisy_circles = datasets.make_circles(n_samples=n_samples, factor=0.5,
+                                          noise=0.05, random_state=seed)
+
+    noisy_moons = datasets.make_moons(n_samples=n_samples, noise=0.05,
+                                      random_state=seed)
+
+    varied = datasets.make_blobs(n_samples=n_samples, cluster_std=[1.0, 0.5],
+                                 random_state=seed, centers=2)
+
+    x, y = datasets.make_blobs(n_samples=n_samples, random_state=170, centers=2)
+    transformation = [[0.6, -0.6], [-0.4, 0.8]]
+    x_aniso = np.dot(x, transformation)
+    aniso = (x_aniso, y)
+
+    blobs = datasets.make_blobs(n_samples=n_samples, random_state=seed, centers=2)
+
+    return [
+        ("Круги", noisy_circles),
+        ("Полумесяцы", noisy_moons),
+        ("Разные дисперсии", varied),
+        ("Анизотропные", aniso),
+        ("Простые blob-ы", blobs)
+    ]
+
+
+def create_models():
+    # KNN
+    knn = KNeighborsClassifier(n_neighbors=5)
+
+    svm = SVC(kernel='rbf', C=1.0, probability=True)
+
+    mlp = Sequential([
+        Dense(32, activation='relu', input_shape=(2,)),
+        Dense(16, activation='relu'),
+        Dense(1, activation='sigmoid')
+    ])
+    mlp.compile(optimizer=Adam(0.001),
+                loss='binary_crossentropy',
+                metrics=['accuracy'])
+
+    return [
+        ("KNN", knn),
+        ("SVM", svm),
+        ("MLP", mlp)
+    ]
+
+def train_and_plot(models, datasets):
+    plt.figure(figsize=(18, 25))
+    plt.subplots_adjust(hspace=0.4, wspace=0.2)
+
+    for row, (dataset_name, (X, y)) in enumerate(datasets):
+        X_train, X_test, y_train, y_test = train_test_split(
+            X, y, test_size=0.2, random_state=42)
+
+        x_min, x_max = X[:, 0].min() - 0.5, X[:, 0].max() + 0.5
+        y_min, y_max = X[:, 1].min() - 0.5, X[:, 1].max() + 0.5
+        xx, yy = np.meshgrid(np.linspace(x_min, x_max, 100),
+                             np.linspace(y_min, y_max, 100))
+
+        for col, (model_name, model) in enumerate(models):
+            plt.subplot(len(datasets), len(models), row * len(models) + col + 1)
+
+            if model_name == "MLP":
+                model.fit(X_train, y_train, epochs=20, batch_size=32, verbose=0)
+                Z = model.predict(np.c_[xx.ravel(), yy.ravel()])
+                Z = (Z > 0.5).astype(int).reshape(xx.shape)
+            else:
+                model.fit(X_train, y_train)
+                if hasattr(model, "predict_proba"):
+                    Z = model.predict_proba(np.c_[xx.ravel(), yy.ravel()])[:, 1]
+                else:
+                    Z = model.decision_function(np.c_[xx.ravel(), yy.ravel()])
+                Z = Z.reshape(xx.shape)
+
+            plt.contourf(xx, yy, Z, alpha=0.3, cmap='RdBu')
+
+            plt.scatter(X_train[:, 0], X_train[:, 1], c=y_train,
+                        cmap='RdBu', edgecolors='k', s=20)
+
+            test_pred = model.predict(X_test) if model_name != "MLP" else (model.predict(X_test) > 0.5).astype(int)
+            correct = test_pred.flatten() == y_test
+            plt.scatter(X_test[correct, 0], X_test[correct, 1],
+                        c=y_test[correct], cmap='RdBu', marker='o',
+                        edgecolors='g', linewidths=1.5, s=40, label='Правильно')
+            plt.scatter(X_test[~correct, 0], X_test[~correct, 1],
+                        c=y_test[~correct], cmap='RdBu', marker='o',
+                        edgecolors='r', linewidths=1.5, s=40, label='Ошибка')
+
+            if row == 0:
+                plt.title(model_name)
+            if col == 0:
+                plt.ylabel(dataset_name)
+
+    plt.show()
+
+datasets = generate_datasets()
+models = create_models()
+train_and_plot(models, datasets)
